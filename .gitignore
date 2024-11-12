@@ -1,0 +1,22 @@
+# Ignore build output directories
+bin/
+obj/
+
+# User-specific files (IDE files, etc.)
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# JetBrains Rider files
+.idea/
+
+# User-specific temporary files
+*.swp
+*~
