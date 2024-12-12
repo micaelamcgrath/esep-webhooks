@@ -1,38 +1,38 @@
-using System.Text;
+using System;
 using Amazon.Lambda.Core;
-using Newtonsoft.Json;
+using Amazon.Lambda.APIGatewayEvents;
+using Newtonsoft.Json.Linq;
 
-// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 
-namespace EsepWebhook;
-
-public class Function
+namespace EsepWebhook
 {
-    
-    /// <summary>
-    /// A simple function that takes a string and does a ToUpper
-    /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
-    /// <returns></returns>
-    public string FunctionHandler(object input, ILambdaContext context)
+    public class Function
     {
-        context.Logger.LogInformation($"FunctionHandler received: {input}");
-
-        dynamic json = JsonConvert.DeserializeObject<dynamic>(input.ToString());
-        string payload = $"{{'text':'Issue Created: {json.issue.html_url}'}}";
-        
-        var client = new HttpClient();
-        var webRequest = new HttpRequestMessage(HttpMethod.Post, Environment.GetEnvironmentVariable("SLACK_URL"))
+        public string FunctionHandler(APIGatewayProxyRequest input, ILambdaContext context)
         {
-            Content = new StringContent(payload, Encoding.UTF8, "application/json")
-        };
-    
-        var response = client.Send(webRequest);
-        using var reader = new StreamReader(response.Content.ReadAsStream());
-            
-        return reader.ReadToEnd();
+            // Log the raw incoming event for debugging
+            context.Logger.LogLine($"Received event: {input.Body}");
+
+            // Parse the JSON payload from GitHub webhook
+            var jsonPayload = JObject.Parse(input.Body);
+
+            // Extract the HTML URL of the issue from the payload
+            var issueUrl = jsonPayload["issue"]?["html_url"]?.ToString();
+
+            // Check if the URL exists
+            if (!string.IsNullOrEmpty(issueUrl))
+            {
+                context.Logger.LogLine($"Issue URL: {issueUrl}");
+                return $"Successfully processed webhook. Issue URL: {issueUrl}";
+            }
+            else
+            {
+                context.Logger.LogLine("Issue URL not found in the payload.");
+                return "Error: Issue URL not found.";
+            }
+        }
     }
 }
+
 
